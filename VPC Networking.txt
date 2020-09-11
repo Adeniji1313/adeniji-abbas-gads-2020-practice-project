@@ -1,0 +1,96 @@
+All codes were run in the Google Cloud Shell
+
+TASK 1. EXPLORE THE NETWORK
+# View the subnets
+gcloud compute networks subnets list
+
+# View the routes
+gcloud compute routes list
+
+# View the firewall rules
+gcloud compute firewall-rules list
+
+# Delete the Firewall rules
+
+
+# Delete the default network
+gcloud compute networks delete default
+
+# Try to create a VM instance
+gcloud compute instances create test-instance --zone=us-central1-a
+
+
+TASK 2. CREATE AN AUTO MODE NETWORK
+# Create an auto mode VPC network with firewall rules
+gcloud compute networks create mynetwork
+gcloud compute firewall-rules create mynetwork-allow-icmp --network=mynetwork --allow icmp --source-ranges 0.0.0.0/0 --priority=65534
+gcloud compute firewall-rules create mynetwork-allow-internal --network=mynetwork --allow all --source-ranges 10.128.0.0/9 --priority=65534
+gcloud compute firewall-rules create mynetwork-allow-rdp --network=mynetwork --allow tcp:3389 --source-ranges 0.0.0.0/0 --priority=65534
+gcloud compute firewall-rules create mynetwork-allow-ssh --network=mynetwork --allow tcp:22 --source-ranges 0.0.0.0/0 --priority=65534
+
+# Create a VM instance in us-central1
+gcloud compute instances create mynet-us-vm --zone=us-central1-c --machine-type=n1-standard-1 --image=debian-10-buster-v20200910 --image-project debian-cloud --subnet "mynetwork"
+
+# Create a VM instance in europe-west1
+gcloud compute instances create mynet-eu-vm --zone=europe-west1-c --machine-type=n1-standard-1 --image=debian-10-buster-v20200910 --image-project debian-cloud --subnet "mynetwork"
+
+# Verify connectivity for the VM instances
+gcloud compute ssh mynet-us-vm --zone=us-central1-c		# SSH into mynet-us-vm
+ping -c 3 10.132.0.2									# Ping mynet-eu-vm's internal IP
+ping -c 3 mynet-eu-vm
+ping -c 3 34.77.221.216									# Ping mynet-eu-vm's external IP
+exit
+
+# Convert the network to a custom mode network
+gcloud compute networks update mynetwork --switch-to-custom-subnet-mode
+
+
+TASK 3. CREATE CUSTOM MODE NETWORKS
+# Create the managementnet network
+gcloud compute networks create managementnet --subnet-mode=custom
+gcloud compute networks subnets create managementsubnet-us --network=managementnet --region=us-central1 --range=10.130.0.0/20
+
+# Create the privatenet network
+gcloud compute networks create privatenet --subnet-mode=custom
+gcloud compute networks subnets create privatesubnet-us --network=privatenet --region=us-central1 --range=172.16.0.0/24
+gcloud compute networks subnets create privatesubnet-eu --network=privatenet --region=europe-west1 --range=172.20.0.0/20
+
+# To list the available VPC networks
+gcloud compute networks list
+
+# To list the available VPC subnets (sorted by VPC network)
+gcloud compute networks subnets list --sort-by=NETWORK
+
+# Create the firewall rules for managementnet
+gcloud compute firewall-rules create managementnet-allow-icmp-ssh-rdp --network=managementnet --action=ALLOW --rules=icmp,tcp:22,tcp:3389 --source-ranges=0.0.0.0/0
+
+# Create the firewall rules for privatenet
+gcloud compute firewall-rules create privatenet-allow-icmp-ssh-rdp --direction=INGRESS --priority=1000 --network=privatenet --action=ALLOW --rules=icmp,tcp:22,tcp:3389 --source-ranges=0.0.0.0/0
+
+# To list all the firewall rules (sorted by VPC network)
+gcloud compute firewall-rules list --sort-by=NETWORK
+
+# Create the managementnet-us-vm instance
+gcloud compute instances create managementnet-us-vm --zone=us-central1-c --machine-type=f1-micro --image=debian-10-buster-v20200910 --image-project debian-cloud --subnet "managementsubnet-us"
+
+# Create the privatenet-us-vm instance
+gcloud compute instances create privatenet-us-vm --zone=us-central1-c --machine-type=f1-micro --subnet=privatesubnet-us --image-family=debian-10 --image-project=debian-cloud --boot-disk-size=10GB --boot-disk-type=pd-standard --boot-disk-device-name=privatenet-us-vm
+
+# To list all the VM instances (sorted by zone)
+gcloud compute instances list --sort-by=ZONE
+
+
+TASK 4. EXPLORE CONNECTIVITY ACROSS NETWORKS
+# Ping the external IP addresses
+gcloud compute ssh mynet-us-vm --zone=us-central1-c 	# SSH into mynet-us-vm
+ping -c 3 35.241.254.220								# Ping mynet-eu-vm's external IP
+ping -c 3 34.123.128.83									# Ping managementnet-us-vm's external IP
+ping -c 3 35.184.78.78									# Ping privatenet-us-vm's external IP
+
+# Ping the internal IP addresses
+ping -c 3 10.132.0.2									# Ping mynet-eu-vm's internal IP
+ping -c 3 10.130.0.2									# Ping managementnet-us-vm's internal IP
+ping -c 3 172.16.0.2									# Ping privatenet-us-vm's internal IP
+
+
+END OF THE LAB

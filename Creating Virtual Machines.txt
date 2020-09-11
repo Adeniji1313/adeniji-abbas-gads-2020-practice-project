@@ -1,0 +1,35 @@
+All codes were run in the Google Cloud Shell
+
+TASK 1. CREATE A UTILITY VIRTUAL MACHINE
+# Create a VM
+gcloud compute instances create abbas --zone=us-central1-c --machine-type=n1-standard-1 --no-address
+
+# Explore the VM details
+gcloud compute instances describe abbas --zone=us-central1-c
+gcloud compute instances get-iam-policy abbas --zone=us-central1-c
+
+
+TASK 2. CREATE A WINDOWS VIRTUAL MACHINE
+# Create a VM
+gcloud compute instances create adeniji --zone=europe-west2-a --machine-type=n1-standard-2 \
+--image=windows-server-2016-dc-core-v20200908 --image-project windows-cloud \
+--boot-disk-type=pd-ssd --boot-disk-size=100GB
+
+TASK 3. CREATE A CUSTOM VIRTUAL MACHINE
+# Create a VM
+gcloud compute instances create custom-vm --zone=us-west1-b --custom-cpu=6 --custom-memory=32
+
+# Connect via SSH to your custom VM
+gcloud compute ssh custom-vm --zone=us-west1-b
+! To see information about unused and used memory and swap space on your custom VM:
+free
+! To see details about the RAM installed on your VM:
+sudo dmidecode -t 17
+! To verify the number of processors:
+nproc
+! To see details about the CPUs installed on your VM:
+lscpu
+
+exit
+
+END OF THE LAB
