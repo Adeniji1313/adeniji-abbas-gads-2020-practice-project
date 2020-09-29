@@ -11,7 +11,10 @@ gcloud compute routes list
 gcloud compute firewall-rules list
 
 # Delete the Firewall rules
-
+gcloud compute firewall-rules delete default-allow-icmp
+gcloud compute firewall-rules delete default-allow-internal
+gcloud compute firewall-rules delete default-allow-rdp
+gcloud compute firewall-rules delete default-allow-ssh
 
 # Delete the default network
 gcloud compute networks delete default
